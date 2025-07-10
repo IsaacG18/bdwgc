@@ -878,6 +878,41 @@ GC_delete_thread(GC_thread t)
     }
   }
 }
+#  if defined(CHERI_PURECAP)
+GC_INNER_WIN32THREAD void
+GC_delete_thread_null(GC_thread t, thread_id_t id)
+{
+  int hv = THREAD_TABLE_INDEX(id);
+  GC_thread p;
+  GC_thread prev = NULL;
+
+  GC_ASSERT(I_HOLD_LOCK());
+#  if defined(DEBUG_THREADS) && !defined(MSWINCE) \
+    && (!defined(MSWIN32) || defined(CONSOLE_LOG))
+  GC_log_printf("Deleting thread %p, n_threads= %d\n", THREAD_ID_TO_VPTR(id),
+                GC_count_threads());
+#  endif
+#  if defined(GC_WIN32_THREADS) && !defined(MSWINCE)
+  CloseHandle(t->handle);
+#  endif
+  for (p = GC_threads[hv]; p != t; p = p->tm.next) {
+    prev = p;
+  }
+  if (NULL == prev) {
+    GC_threads[hv] = p->tm.next;
+  } else {
+    GC_ASSERT(prev != &first_thread);
+    prev->tm.next = p->tm.next;
+    GC_dirty(prev);
+  }
+  if (EXPECT(p != &first_thread, TRUE)) {
+#  ifdef DARWIN
+    mach_port_deallocate(mach_task_self(), p->mach_thread);
+#  endif
+    GC_INTERNAL_FREE(p);
+  }
+}
+#  endif
 
 /* Return a GC_thread corresponding to a given thread id, or    */
 /* NULL if it is not there.  Caller holds the allocator lock    */
@@ -896,6 +931,10 @@ GC_lookup_thread(thread_id_t id)
   for (p = GC_threads[THREAD_TABLE_INDEX(id)]; p != NULL; p = p->tm.next) {
     if (EXPECT(THREAD_ID_EQUAL(p->id, id), TRUE))
       break;
+#  if defined(CHERI_PURECAP)
+      if (p->id == NULL)
+        break;
+#  endif
   }
   return p;
 }
@@ -2568,7 +2607,13 @@ GC_wrap_pthread_join(pthread_t thread, void **retval)
     /* client thread key destructor).                                 */
     if (KNOWN_FINISHED(t)) {
       GC_delete_thread(t);
+
+#  if defined(CHERI_PURECAP)
+    }else if (t->id == NULL){
+      GC_delete_thread_null(t, thread);
     }
+#  endif
+    
     UNLOCK();
   }
 

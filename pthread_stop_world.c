@@ -826,6 +826,10 @@ GC_push_all_stacks(void)
       GC_ASSERT(THREAD_TABLE_INDEX(p->id) == i);
       if (KNOWN_FINISHED(p))
         continue;
+#  if defined(CHERI_PURECAP)
+      if (p->id == NULL)
+        continue;
+#  endif
       ++nthreads;
       traced_stack_sect = crtn->traced_stack_sect;
       if (THREAD_EQUAL(p->id, self)) {
@@ -969,6 +973,10 @@ GC_suspend_all(void)
       if (!THREAD_EQUAL(p->id, self)) {
         if ((p->flags & (FINISHED | DO_BLOCKING)) != 0)
           continue;
+#     if defined(CHERI_PURECAP)
+        if (p->id == NULL)
+          continue;
+#     endif
 #    ifdef GC_ENABLE_SUSPEND_THREAD
         if ((p->ext_suspend_cnt & 1) != 0)
           continue;
@@ -1307,6 +1315,10 @@ GC_restart_all(void)
       if (!THREAD_EQUAL(p->id, self)) {
         if ((p->flags & (FINISHED | DO_BLOCKING)) != 0)
           continue;
+#    if defined(CHERI_PURECAP)
+        if (p->id == NULL)
+          continue;
+#    endif
 #    ifdef GC_ENABLE_SUSPEND_THREAD
         if ((p->ext_suspend_cnt & 1) != 0)
           continue;
