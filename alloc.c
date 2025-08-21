@@ -1073,7 +1073,7 @@ GC_stopped_mark(GC_stop_func stop_func)
         stopped_mark_total_time++;
       }
     }
-    // total_collections++;
+
     if (GC_PRINT_STATS_FLAG || measure_performance) {
       unsigned total_time = world_stopped_total_time;
       unsigned divisor = world_stopped_total_divisor;
@@ -2041,11 +2041,4 @@ GC_allocobj(size_t lg, int kind)
   /* Successful allocation; reset failure count.      */
   GC_fail_count = 0;
   return (ptr_t)(*flh);
-}
-
-static int total_collections = 0;
-GC_API int GC_CALL
-GC_get_total_collections(void)
-{
-  return total_collections;
 }
