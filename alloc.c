@@ -865,12 +865,6 @@ GC_collect_a_little_inner(size_t n_blocks)
       /* Update old world_stopped_total_time and its divisor.   */
       world_stopped_total_time = total_time;
       world_stopped_total_divisor = ++divisor;
-      if (GC_PRINT_STATS_FLAG && 0 == abandoned_at) {
-        GC_ASSERT(divisor != 0);
-        GC_log_printf("World-stopped marking took %lu ms %lu ns"
-                      " (%u ms in average)\n",
-                      time_diff, ns_frac_diff, total_time / divisor);
-      }
     }
   }
 #endif
