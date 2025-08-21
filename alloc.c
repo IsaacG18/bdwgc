@@ -835,37 +835,22 @@ GC_collect_a_little_inner(size_t n_blocks)
   if (start_time_valid) {
     CLOCK_TYPE current_time;
     unsigned long time_diff, ns_frac_diff;
-
-    /* TODO: Avoid code duplication from GC_try_to_collect_inner */
+    
     GET_TIME(current_time);
     time_diff = MS_TIME_DIFF(current_time, start_time);
     ns_frac_diff = NS_FRAC_TIME_DIFF(current_time, start_time);
     if (measure_performance) {
-      stopped_mark_total_time += time_diff; /* may wrap */
-      stopped_mark_total_ns_frac += (unsigned32)ns_frac_diff;
-      if (stopped_mark_total_ns_frac >= (unsigned32)1000000UL) {
-        stopped_mark_total_ns_frac -= (unsigned32)1000000UL;
-        stopped_mark_total_time++;
+      full_gc_total_time += time_diff; /* may wrap */
+      full_gc_total_ns_frac += (unsigned32)ns_frac_diff;
+      if (full_gc_total_ns_frac >= (unsigned32)1000000UL) {
+        /* Overflow of the nanoseconds part. */
+        full_gc_total_ns_frac -= (unsigned32)1000000UL;
+        full_gc_total_time++;
       }
     }
-    
-    if (GC_PRINT_STATS_FLAG || measure_performance) {
-      unsigned total_time = world_stopped_total_time;
-      unsigned divisor = world_stopped_total_divisor;
-
-      /* Compute new world-stop delay total time.   */
-      if (total_time > (((unsigned)-1) >> 1)
-          || divisor >= MAX_TOTAL_TIME_DIVISOR) {
-        /* Halve values if overflow occurs. */
-        total_time >>= 1;
-        divisor >>= 1;
-      }
-      total_time += time_diff < (((unsigned)-1) >> 1) ? (unsigned)time_diff
-                                                      : ((unsigned)-1) >> 1;
-      /* Update old world_stopped_total_time and its divisor.   */
-      world_stopped_total_time = total_time;
-      world_stopped_total_divisor = ++divisor;
-    }
+    if (GC_print_stats)
+      GC_log_printf("Complete collection took %lu ms %lu ns\n", time_diff,
+                    ns_frac_diff);
   }
 #endif
 }
