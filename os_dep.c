@@ -1385,9 +1385,9 @@ GC_get_main_stack_base(void)
     }
     (void)pthread_attr_destroy(&attr);
   }
-  WARN("pthread_getattr_np or pthread_attr_getstack failed"
-       " for main thread\n",
-       0);
+  // WARN("pthread_getattr_np or pthread_attr_getstack failed"
+  //      " for main thread\n",
+  //      0);
 #  endif
 #  ifdef STACKBOTTOM
   result = STACKBOTTOM;
