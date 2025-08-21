@@ -689,7 +689,7 @@ GC_try_to_collect_inner(GC_stop_func stop_func)
   if (start_time_valid) {
     CLOCK_TYPE current_time;
     unsigned long time_diff, ns_frac_diff;
-
+    
     GET_TIME(current_time);
     time_diff = MS_TIME_DIFF(current_time, start_time);
     ns_frac_diff = NS_FRAC_TIME_DIFF(current_time, start_time);
@@ -767,6 +767,19 @@ GC_get_max_prior_attempts(void)
 GC_INNER void
 GC_collect_a_little_inner(size_t n_blocks)
 {
+  #ifndef NO_CLOCK
+  CLOCK_TYPE start_time = CLOCK_TYPE_INITIALIZER;
+  GC_bool start_time_valid;
+  if (GC_incremental){
+    start_time_valid = FALSE;
+    if ((GC_print_stats | (int)measure_performance) != 0) {
+      if (GC_print_stats)
+        GC_log_printf("Initiating full world-stop collection!\n");
+      start_time_valid = TRUE;
+      GET_TIME(start_time);
+    }
+  }
+  #endif
   IF_CANCEL(int cancel_state;)
 
   GC_ASSERT(I_HOLD_LOCK());
@@ -818,6 +831,49 @@ GC_collect_a_little_inner(size_t n_blocks)
     GC_maybe_gc();
   }
   RESTORE_CANCEL(cancel_state);
+#ifndef NO_CLOCK
+  if (start_time_valid) {
+    CLOCK_TYPE current_time;
+    unsigned long time_diff, ns_frac_diff;
+
+    /* TODO: Avoid code duplication from GC_try_to_collect_inner */
+    GET_TIME(current_time);
+    time_diff = MS_TIME_DIFF(current_time, start_time);
+    ns_frac_diff = NS_FRAC_TIME_DIFF(current_time, start_time);
+    if (measure_performance) {
+      stopped_mark_total_time += time_diff; /* may wrap */
+      stopped_mark_total_ns_frac += (unsigned32)ns_frac_diff;
+      if (stopped_mark_total_ns_frac >= (unsigned32)1000000UL) {
+        stopped_mark_total_ns_frac -= (unsigned32)1000000UL;
+        stopped_mark_total_time++;
+      }
+    }
+    
+    if (GC_PRINT_STATS_FLAG || measure_performance) {
+      unsigned total_time = world_stopped_total_time;
+      unsigned divisor = world_stopped_total_divisor;
+
+      /* Compute new world-stop delay total time.   */
+      if (total_time > (((unsigned)-1) >> 1)
+          || divisor >= MAX_TOTAL_TIME_DIVISOR) {
+        /* Halve values if overflow occurs. */
+        total_time >>= 1;
+        divisor >>= 1;
+      }
+      total_time += time_diff < (((unsigned)-1) >> 1) ? (unsigned)time_diff
+                                                      : ((unsigned)-1) >> 1;
+      /* Update old world_stopped_total_time and its divisor.   */
+      world_stopped_total_time = total_time;
+      world_stopped_total_divisor = ++divisor;
+      if (GC_PRINT_STATS_FLAG && 0 == abandoned_at) {
+        GC_ASSERT(divisor != 0);
+        GC_log_printf("World-stopped marking took %lu ms %lu ns"
+                      " (%u ms in average)\n",
+                      time_diff, ns_frac_diff, total_time / divisor);
+      }
+    }
+  }
+#endif
 }
 
 #if !defined(NO_FIND_LEAK) || !defined(SHORT_DBG_HDRS)
@@ -1017,7 +1073,7 @@ GC_stopped_mark(GC_stop_func stop_func)
         stopped_mark_total_time++;
       }
     }
-
+    // total_collections++;
     if (GC_PRINT_STATS_FLAG || measure_performance) {
       unsigned total_time = world_stopped_total_time;
       unsigned divisor = world_stopped_total_divisor;
@@ -1985,4 +2041,11 @@ GC_allocobj(size_t lg, int kind)
   /* Successful allocation; reset failure count.      */
   GC_fail_count = 0;
   return (ptr_t)(*flh);
+}
+
+static int total_collections = 0;
+GC_API int GC_CALL
+GC_get_total_collections(void)
+{
+  return total_collections;
 }
