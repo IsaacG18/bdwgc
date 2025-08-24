@@ -16,7 +16,7 @@
  */
 
 #include "private/gc_priv.h"
-
+#include <time.h>
 /*
  * Separate free lists are maintained for different sized objects
  * up to MAXOBJBYTES.
@@ -56,7 +56,6 @@ word GC_non_gc_bytes = 0;
 word GC_gc_no = 0;
 
 #ifndef NO_CLOCK
-
 static unsigned long full_gc_total_time = 0; /* in ms, may wrap */
 static unsigned long stopped_mark_total_time = 0;
 static unsigned32 full_gc_total_ns_frac = 0; /* fraction of 1 ms */
@@ -614,8 +613,12 @@ GC_INNER GC_bool
 GC_try_to_collect_inner(GC_stop_func stop_func)
 {
 #ifndef NO_CLOCK
-  CLOCK_TYPE start_time = CLOCK_TYPE_INITIALIZER;
   GC_bool start_time_valid;
+  #ifdef THREADS
+  struct timespec start_cpu_time;
+  #else
+  CLOCK_TYPE start_time = CLOCK_TYPE_INITIALIZER;
+  #endif
 #endif
 
   ASSERT_CANCEL_DISABLED();
@@ -640,11 +643,15 @@ GC_try_to_collect_inner(GC_stop_func stop_func)
   GC_notify_full_gc();
 #ifndef NO_CLOCK
   start_time_valid = FALSE;
-  if ((GC_print_stats | (int)measure_performance) != 0) {
+  if ((GC_print_stats | (int)measure_performance) != 0 && !GC_incremental) {
     if (GC_print_stats)
       GC_log_printf("Initiating full world-stop collection!\n");
     start_time_valid = TRUE;
+    #ifdef THREADS
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_cpu_time);
+    #else
     GET_TIME(start_time);
+    #endif
   }
 #endif
   GC_promote_black_lists();
@@ -686,25 +693,33 @@ GC_try_to_collect_inner(GC_stop_func stop_func)
   }
   GC_finish_collection();
 #ifndef NO_CLOCK
-  if (start_time_valid) {
-    CLOCK_TYPE current_time;
-    unsigned long time_diff, ns_frac_diff;
-    
-    GET_TIME(current_time);
-    time_diff = MS_TIME_DIFF(current_time, start_time);
-    ns_frac_diff = NS_FRAC_TIME_DIFF(current_time, start_time);
+  if (start_time_valid && !GC_incremental) {
     if (measure_performance) {
-      full_gc_total_time += time_diff; /* may wrap */
+      #ifndef THREADS
+      CLOCK_TYPE current_time;
+      GET_TIME(current_time);
+      unsigned long ns_frac_diff, time_diff;
+      time_diff = MS_TIME_DIFF(current_time, start_time);
+      ns_frac_diff = NS_FRAC_TIME_DIFF(current_time, start_time);
+      full_gc_total_time += time_diff; 
       full_gc_total_ns_frac += (unsigned32)ns_frac_diff;
       if (full_gc_total_ns_frac >= (unsigned32)1000000UL) {
-        /* Overflow of the nanoseconds part. */
         full_gc_total_ns_frac -= (unsigned32)1000000UL;
         full_gc_total_time++;
       }
+      #else
+      struct timespec end_cpu_time;
+      clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_cpu_time);
+      unsigned long cpu_time_diff = (end_cpu_time.tv_sec - start_cpu_time.tv_sec);
+      unsigned long cpu_time_diff_ns = (end_cpu_time.tv_nsec - start_cpu_time.tv_nsec);
+      full_gc_total_time += cpu_time_diff; 
+      full_gc_total_ns_frac += (unsigned32)cpu_time_diff_ns;
+      if (full_gc_total_ns_frac >= (unsigned32)1000000UL) {
+        full_gc_total_ns_frac -= (unsigned32)1000000UL;
+        full_gc_total_time++;
+      }
+      #endif
     }
-    if (GC_print_stats)
-      GC_log_printf("Complete collection took %lu ms %lu ns\n", time_diff,
-                    ns_frac_diff);
   }
 #endif
   if (GC_on_collection_event)
@@ -767,16 +782,24 @@ GC_get_max_prior_attempts(void)
 GC_INNER void
 GC_collect_a_little_inner(size_t n_blocks)
 {
-  #ifndef NO_CLOCK
-  CLOCK_TYPE start_time = CLOCK_TYPE_INITIALIZER;
+    #ifndef NO_CLOCK
   GC_bool start_time_valid;
+  #ifdef THREADS
+  struct timespec start_cpu_time;
+  #else
+  CLOCK_TYPE start_time = CLOCK_TYPE_INITIALIZER;
+  #endif
   if (GC_incremental){
     start_time_valid = FALSE;
     if ((GC_print_stats | (int)measure_performance) != 0) {
       if (GC_print_stats)
         GC_log_printf("Initiating full world-stop collection!\n");
       start_time_valid = TRUE;
+      #ifdef THREADS
+      clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_cpu_time);
+      #else
       GET_TIME(start_time);
+      #endif
     }
   }
   #endif
@@ -832,25 +855,33 @@ GC_collect_a_little_inner(size_t n_blocks)
   }
   RESTORE_CANCEL(cancel_state);
 #ifndef NO_CLOCK
-  if (start_time_valid) {
-    CLOCK_TYPE current_time;
-    unsigned long time_diff, ns_frac_diff;
-    
-    GET_TIME(current_time);
-    time_diff = MS_TIME_DIFF(current_time, start_time);
-    ns_frac_diff = NS_FRAC_TIME_DIFF(current_time, start_time);
+  if (start_time_valid && GC_incremental) {
     if (measure_performance) {
-      full_gc_total_time += time_diff; /* may wrap */
+      #ifndef THREADS
+      CLOCK_TYPE current_time;
+      GET_TIME(current_time);
+      unsigned long ns_frac_diff, time_diff;
+      time_diff = MS_TIME_DIFF(current_time, start_time);
+      ns_frac_diff = NS_FRAC_TIME_DIFF(current_time, start_time);
+      full_gc_total_time += time_diff; 
       full_gc_total_ns_frac += (unsigned32)ns_frac_diff;
       if (full_gc_total_ns_frac >= (unsigned32)1000000UL) {
-        /* Overflow of the nanoseconds part. */
         full_gc_total_ns_frac -= (unsigned32)1000000UL;
         full_gc_total_time++;
       }
+      #else
+      struct timespec end_cpu_time;
+      clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_cpu_time);
+      unsigned long cpu_time_diff = (end_cpu_time.tv_sec - start_cpu_time.tv_sec);
+      unsigned long cpu_time_diff_ns = (end_cpu_time.tv_nsec - start_cpu_time.tv_nsec);
+      full_gc_total_time += cpu_time_diff; 
+      full_gc_total_ns_frac += (unsigned32)cpu_time_diff_ns;
+      if (full_gc_total_ns_frac >= (unsigned32)1000000UL) {
+        full_gc_total_ns_frac -= (unsigned32)1000000UL;
+        full_gc_total_time++;
+      }
+      #endif
     }
-    if (GC_print_stats)
-      GC_log_printf("Complete collection took %lu ms %lu ns\n", time_diff,
-                    ns_frac_diff);
   }
 #endif
 }
