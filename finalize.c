@@ -1074,7 +1074,7 @@ GC_finalize(void)
         GC_MARKED_FOR_FINALIZATION(real_ptr);
         GC_mark_fo(real_ptr, curr_fo->fo_mark_proc);
         if (GC_is_marked(real_ptr)) {
-          WARN("Finalization cycle involving %p\n", real_ptr);
+          // WARN("Finalization cycle involving %p\n", real_ptr);
         }
       }
     }

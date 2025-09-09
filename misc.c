@@ -1270,7 +1270,7 @@ GC_init(void)
 
     if (str != NULL) {
 #ifndef ENABLE_TRACE
-      WARN("Tracing not enabled: Ignoring GC_TRACE value\n", 0);
+      // WARN("Tracing not enabled: Ignoring GC_TRACE value\n", 0);
 #else
       ptr_t p = MAKE_CPTR(STRTOULL(str, NULL, 16));
 
@@ -1325,8 +1325,8 @@ GC_init(void)
       long interval = atol(str);
 
       if (interval <= 0) {
-        WARN("GC_LARGE_ALLOC_WARN_INTERVAL environment variable has"
-             " bad value - ignoring\n",
+        // WARN("GC_LARGE_ALLOC_WARN_INTERVAL environment variable has"
+        //      " bad value - ignoring\n",
              0);
       } else {
         GC_large_alloc_warn_interval = interval;
@@ -1481,7 +1481,7 @@ GC_init(void)
       word value = GC_parse_mem_size_arg(str);
 
       if (GC_WORD_MAX == value) {
-        WARN("Bad initial heap size %s - ignoring\n", str);
+        // WARN("Bad initial heap size %s - ignoring\n", str);
       } else {
         initial_heap_sz = value;
       }
@@ -1494,7 +1494,7 @@ GC_init(void)
       word max_heap_sz = GC_parse_mem_size_arg(str);
 
       if (max_heap_sz < initial_heap_sz || GC_WORD_MAX == max_heap_sz) {
-        WARN("Bad maximum heap size %s - ignoring\n", str);
+        // WARN("Bad maximum heap size %s - ignoring\n", str);
       } else {
         if (0 == GC_max_retries)
           GC_max_retries = 2;
@@ -2315,8 +2315,8 @@ GC_enable(void)
   GC_ASSERT(GC_dont_gc != 0);
   GC_dont_gc--;
   if (!GC_dont_gc && GC_heapsize > GC_heapsize_on_gc_disable)
-    WARN("Heap grown by %" WARN_PRIuPTR " KiB while GC was disabled\n",
-         (GC_heapsize - GC_heapsize_on_gc_disable) >> 10);
+    // WARN("Heap grown by %" WARN_PRIuPTR " KiB while GC was disabled\n",
+    //      (GC_heapsize - GC_heapsize_on_gc_disable) >> 10);
   UNLOCK();
 }
 

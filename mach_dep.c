@@ -91,9 +91,9 @@ GC_with_callee_saves_pushed(GC_with_callee_saves_func fn, ptr_t arg)
 
   if (getcontext_works >= 0) {
     if (getcontext(&ctxt) < 0) {
-      WARN("getcontext failed:"
-           " using another register retrieval method...\n",
-           0);
+      // WARN("getcontext failed:"
+      //      " using another register retrieval method...\n",
+      //      0);
       /* getcontext() is broken, do not try again.          */
       /* E.g., to workaround a bug in Docker ubuntu_32bit.  */
     } else {

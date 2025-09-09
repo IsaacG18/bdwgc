@@ -143,9 +143,9 @@ GC_scratch_alloc(size_t bytes)
 
     result = GC_os_get_mem(bytes_to_get);
     if (EXPECT(NULL == result, FALSE)) {
-      WARN("Out of memory - trying to allocate requested amount"
-           " (%" WARN_PRIuPTR " bytes)...\n",
-           bytes);
+      // WARN("Out of memory - trying to allocate requested amount"
+      //      " (%" WARN_PRIuPTR " bytes)...\n",
+      //      bytes);
       bytes_to_get = ROUNDUP_PAGESIZE_IF_MMAP(bytes);
       result = GC_os_get_mem(bytes_to_get);
       if (result != NULL) {

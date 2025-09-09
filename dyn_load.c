@@ -580,9 +580,9 @@ GC_register_dynlib_callback(struct dl_phdr_info *info, size_t size, void *ptr)
 #          endif
       if (n_load_segs >= MAX_LOAD_SEGS) {
         if (!load_segs_overflow) {
-          WARN("Too many PT_LOAD segments;"
-               " registering as roots directly...\n",
-               0);
+          // WARN("Too many PT_LOAD segments;"
+          //      " registering as roots directly...\n",
+          //      0);
           load_segs_overflow = TRUE;
         }
         GC_add_roots_inner(my_start, my_end, TRUE);
@@ -618,7 +618,7 @@ GC_register_dynlib_callback(struct dl_phdr_info *info, size_t size, void *ptr)
       for (j = n_load_segs; --j >= 0;) {
         if (ADDR_INSIDE(my_start, load_segs[j].start, load_segs[j].end)) {
           if (load_segs[j].start2 != NULL) {
-            WARN("More than one GNU_RELRO segment per load one\n", 0);
+            // WARN("More than one GNU_RELRO segment per load one\n", 0);
           } else {
             GC_ASSERT(
                 ADDR_GE(PTR_ALIGN_UP(load_segs[j].end, GC_page_size), my_end));
@@ -632,9 +632,9 @@ GC_register_dynlib_callback(struct dl_phdr_info *info, size_t size, void *ptr)
           break;
         }
         if (0 == j && 0 == GC_has_static_roots)
-          WARN("Failed to find PT_GNU_RELRO segment"
-               " inside PT_LOAD region\n",
-               0);
+          // WARN("Failed to find PT_GNU_RELRO segment"
+          //      " inside PT_LOAD region\n",
+          //      0);
         /* No warning reported in case of the callback is present   */
         /* because most likely the segment has been excluded.       */
       }

@@ -3625,7 +3625,7 @@ GC_dirty_init(void)
     GC_old_segv_handler_used_si = FALSE;
   }
   if ((GC_funcptr_uint)GC_old_segv_handler == (GC_funcptr_uint)SIG_IGN) {
-    WARN("Previously ignored segmentation violation!?\n", 0);
+    // WARN("Previously ignored segmentation violation!?\n", 0);
     GC_old_segv_handler = (SIG_HNDLR_PTR)(GC_funcptr_uint)SIG_DFL;
   }
   if ((GC_funcptr_uint)GC_old_segv_handler != (GC_funcptr_uint)SIG_DFL) {
@@ -3763,9 +3763,9 @@ GC_handle_protected_regions_limit(void)
     GC_task_self = 0;
 #    endif
     GC_incremental = FALSE;
-    WARN("GC incremental mode is turned off"
-         " to prevent hitting VM maps limit\n",
-         0);
+    // WARN("GC incremental mode is turned off"
+    //      " to prevent hitting VM maps limit\n",
+    //      0);
   }
 }
 #  endif /* COUNT_PROTECTED_REGIONS */
@@ -4009,10 +4009,10 @@ open_proc_fd(pid_t pid, const char *slash_filename, int mode)
   GC_snprintf_s_ld_s(buf, sizeof(buf), "/proc/", (long)pid, slash_filename);
   f = open(buf, mode);
   if (-1 == f) {
-    WARN("/proc/self%s open failed; cannot enable GC incremental mode\n",
-         slash_filename);
+    // WARN("/proc/self%s open failed; cannot enable GC incremental mode\n",
+    //      slash_filename);
   } else if (fcntl(f, F_SETFD, FD_CLOEXEC) == -1) {
-    WARN("Could not set FD_CLOEXEC for /proc\n", 0);
+    // WARN("Could not set FD_CLOEXEC for /proc\n", 0);
   }
   return f;
 }
@@ -4125,8 +4125,8 @@ ensure_min_linux_ver(int major, int minor)
     return FALSE;
   }
   if (strcmp(info.sysname, "Linux")) {
-    WARN("Cannot ensure Linux version as running on other OS: %s\n",
-         info.sysname);
+    // WARN("Cannot ensure Linux version as running on other OS: %s\n",
+    //      info.sysname);
     return FALSE;
   }
   actual_major = GC_parse_version(&actual_minor, info.release);
@@ -4279,7 +4279,7 @@ soft_set_grungy_pages(ptr_t start, ptr_t limit, ptr_t next_start_hint,
     if (res % sizeof(pagemap_elem_t) != 0) {
       /* Punt: */
       memset(GC_grungy_pages, 0xff, sizeof(page_hash_table));
-      WARN("Incomplete read of pagemap, not multiple of entry size\n", 0);
+      // WARN("Incomplete read of pagemap, not multiple of entry size\n", 0);
       break;
     }
 
