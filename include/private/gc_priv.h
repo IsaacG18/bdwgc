@@ -780,9 +780,7 @@ GC_API_PRIV GC_abort_func GC_on_abort;
 /* Print warning message, e.g. almost out of memory.  The argument (if  */
 /* any) format specifier should be: "%s", "%p", "%"WARN_PRIdPTR or      */
 /* "%"WARN_PRIuPTR.                                                     */
-#define WARN(msg, arg) \
-  GC_current_warn_proc("GC Warning: " msg, (GC_uintptr_t)(arg))
-GC_EXTERN GC_warn_proc GC_current_warn_proc;
+#define WARN(msg, arg) ((void)0)
 
 /* Print format type macro for decimal GC_signed_word value passed      */
 /* WARN().  This could be redefined for Win64 or LLP64, but typically   */
