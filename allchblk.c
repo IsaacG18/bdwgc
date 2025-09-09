@@ -659,7 +659,7 @@ GC_get_first_part(struct hblk *h, hdr *hhdr, size_t size_needed, size_t index)
   rest_hdr = GC_install_header(rest);
   if (EXPECT(NULL == rest_hdr, FALSE)) {
     /* FIXME: This is likely to be very bad news ... */
-    WARN("Header allocation failed: dropping block\n", 0);
+    // WARN("Header allocation failed: dropping block\n", 0);
     return NULL;
   }
   rest_hdr->hb_block = rest;
@@ -994,10 +994,10 @@ retry:
     if (size_needed > BL_LIMIT && size_avail - size_needed > BL_LIMIT) {
       /* Punt, since anything else risks unreasonable heap growth.    */
       if (++GC_large_alloc_warn_suppressed >= GC_large_alloc_warn_interval) {
-        WARN("Repeated allocation of very large block"
-             " (appr. size %" WARN_PRIuPTR " KiB):\n"
-             "\tMay lead to memory leak and poor performance\n",
-             size_needed >> 10);
+        //WARN ("Repeated allocation of very large block"
+        //      " (appr. size %" WARN_PRIuPTR " KiB):\n"
+        //      "\tMay lead to memory leak and poor performance\n",
+            //  size_needed >> 10);
         GC_large_alloc_warn_suppressed = 0;
       }
       last_hbp = hbp + divHBLKSZ(align_ofs);

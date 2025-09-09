@@ -1327,7 +1327,7 @@ GC_init(void)
       if (interval <= 0) {
         // WARN("GC_LARGE_ALLOC_WARN_INTERVAL environment variable has"
         //      " bad value - ignoring\n",
-             0);
+        //      0);
       } else {
         GC_large_alloc_warn_interval = interval;
       }
